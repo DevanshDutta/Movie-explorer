@@ -1,0 +1,62 @@
+// prisma/schema.prisma
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// Movie table
+model Movie {
+  id           Int          @id
+  title        String
+  overview     String?
+  voteAverage  Float?       @map("vote_average")
+  voteCount    Int?         @map("vote_count")
+  releaseDate  DateTime?    @map("release_date")
+  posterPath   String?      @map("poster_path")
+  genres       MovieGenre[]
+  casts        MovieCast[]
+}
+
+// Genre table
+model Genre {
+  id      Int          @id
+  name    String
+  movies  MovieGenre[]
+}
+
+// Join table for Movie-Genre (many-to-many)
+model MovieGenre {
+  movie    Movie   @relation(fields: [movieId], references: [id], onDelete: Cascade)
+  movieId  Int
+  genre    Genre   @relation(fields: [genreId], references: [id], onDelete: Cascade)
+  genreId  Int
+
+  @@id([movieId, genreId])
+}
+
+// Cast (actor) table
+model Cast {
+  id          Int         @id
+  name        String
+  gender      Int?
+  profilePath String?     @map("profile_path")
+  popularity  Float?
+  movies      MovieCast[]
+}
+
+// Join table for Movie-Cast (many-to-many)
+model MovieCast {
+  movie      Movie      @relation(fields: [movieId], references: [id], onDelete: Cascade)
+  movieId    Int
+  cast       Cast       @relation(fields: [castId], references: [id], onDelete: Cascade)
+  castId     Int
+  character  String?
+  order      Int?       // Cast billing order
+
+  @@id([movieId, castId])
+}

@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Movie Explorer</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f2f2f2; margin: 0; padding: 0; }
+    .container { max-width: 1200px; margin: 0 auto; padding: 30px;}
+    h1 { text-align: center; }
+    .search-bar { text-align: center; margin-bottom: 24px; }
+    .search-bar input { padding: 10px; width: 280px; font-size: 18px;}
+    .search-bar button { padding: 9px 16px; font-size: 16px;}
+    .movie-grid { display: flex; flex-wrap: wrap; gap: 28px; justify-content: center;}
+    .movie-card { background: #fff; border-radius: 9px; box-shadow: 0 2px 6px #0001; width: 310px; padding: 15px 16px; margin-bottom: 20px;}
+    .movie-card img { width: 100%; height: 460px; object-fit: cover; border-radius: 7px; }
+    .movie-card h2 { font-size: 20px; margin: 0 0 8px 0; }
+    .movie-info { font-size: 13px; color: #666; margin: 3px 0 12px 0; }
+    .genre, .cast { font-size: 13px; }
+    .rating { color: #d98108; font-weight: bold;}
+    .overview {font-size: 15px; margin:6px 0;}
+    .status {text-align:center; margin:18px 0; color:#c00; font-weight:bold;}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Movie Explorer</h1>
+    <form class="search-bar" onsubmit="return searchMovies();">
+      <input type="text" id="search-input" placeholder="Search by title or actor" autocomplete="off" />
+      <button type="submit">Search</button>
+    </form>
+    <div id="status" class="status"></div>
+    <div id="movies" class="movie-grid"></div>
+  </div>
+
+<script>
+const API_URL = "http://localhost:3000/movies";
+
+function movieCard(movie) {
+  const posterUrl = movie.posterPath
+    ? `https://image.tmdb.org/t/p/w300${movie.posterPath}`
+    : "https://via.placeholder.com/300x450?text=No+Image";
+  const genres = movie.genres
+    ? movie.genres.map(g => g.genre.name).join(", ")
+    : "-";
+  const casts = movie.casts
+    ? movie.casts.slice(0, 3).map(c => c.cast.name).join(", ")
+    : "-";
+
+  return `
+    <div class="movie-card">
+      <img src="${posterUrl}" alt="${movie.title}" loading="lazy" />
+      <h2>${movie.title}</h2>
+      <div class="movie-info">Released: ${movie.releaseDate ? movie.releaseDate.slice(0, 10) : "-"}</div>
+      <div class="genre"><b>Genres:</b> ${genres}</div>
+      <div class="cast"><b>Cast:</b> ${casts}</div>
+      <div class="overview">${movie.overview || ""}</div>
+      <div class="rating">★ ${movie.voteAverage || "-"} | Votes: ${movie.voteCount || "-"}</div>
+    </div>
+  `;
+}
+
+function renderMovies(movies) {
+  const grid = document.getElementById('movies');
+  const status = document.getElementById('status');
+  if (!movies.length) {
+    grid.innerHTML = "";
+    status.textContent = "No movies found. Try a different search.";
+    return;
+  }
+  status.textContent = "";
+  grid.innerHTML = movies.map(movieCard).join('');
+}
+
+async function fetchMovies(query = "") {
+  const grid = document.getElementById('movies');
+  const status = document.getElementById('status');
+  grid.innerHTML = "";
+  status.style.color = "#999";
+  status.textContent = "Loading...";
+  let url = API_URL;
+  if (query) url += '?search=' + encodeURIComponent(query);
+  
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error("API error " + res.status);
+    const data = await res.json();
+    renderMovies(data);
+  } catch (err) {
+    status.style.color = "#c00";
+    status.textContent = "Could not load movies. Please check if backend is running.";
+  }
+}
+
+// Called when user submits search form
+function searchMovies() {
+  const val = document.getElementById('search-input').value.trim();
+  fetchMovies(val);
+  return false; // Prevent form submit reload
+}
+
+// Load all movies initially on page load
+fetchMovies();
+</script>
+</body>
+</html>
